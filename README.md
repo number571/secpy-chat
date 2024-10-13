@@ -10,9 +10,6 @@
     <a href="https://github.com/topics/python">
       <img src="https://img.shields.io/badge/Python-v3-1f425f.svg" alt="Python" />
 		</a>
-    <a href="https://github.com/number571/go-peer/releases">
-      <img src="https://img.shields.io/github/v/release/number571/go-peer.svg" alt="Release" />
-		</a>
     <a href="https://github.com/number571/go-peer/blob/master/LICENSE">
       <img src="https://img.shields.io/github/license/number571/go-peer.svg" alt="License" />
 		</a>
