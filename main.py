@@ -129,13 +129,13 @@ def input_task():
             friend = _friend
             continue
 
-        if friend == "":
+        if len(friend) != 2 or friend[0] == "":
             print("@ friend is null, use /friend to set")
             continue 
 
         resp_hle = requests.post(
             HLE_URL+"/api/message/encrypt", 
-            json={"public_key": friend, "hex_data": msg.encode("utf-8").hex()}
+            json={"public_key": friend[0], "hex_data": msg.encode("utf-8").hex()}
         )
         if resp_hle.status_code != 200:
             print("@ got response error from HLE (/api/message/encrypt)")
@@ -151,7 +151,7 @@ def input_task():
 
 def get_friend_name(user_id):
     for k, v in FRIENDS.items():
-        friend_id = hashlib.sha256(v.encode('utf-8')).hexdigest()
+        friend_id = hashlib.sha256(v[1].encode('utf-8')).hexdigest()
         if user_id == friend_id:
             return k
     return ""
