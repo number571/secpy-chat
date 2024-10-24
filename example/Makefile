@@ -1,5 +1,5 @@
 .PHONY: default init install run clean
-default: init clean install run
+default: init clean run
 init: 
 	# CHECK PROGRAMS
 	pkill -15 --version

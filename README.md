@@ -35,14 +35,11 @@ $ pip3 install -r requirements.txt
 ```
 "hlt_host" address of the HLT service
 "hle_host" address of the HLE service
-"friends"  map of {"alias_name":"public_key"}
 ```
 
 ```yaml
 hlt_host: localhost:9582
 hle_host: localhost:9551
-friends: 
-  Alice: PubKey{3082020A02820201...3324D10203010001}
 ```
 
 ## How it works
@@ -57,7 +54,10 @@ The application connects to two services at once: [HLE](https://github.com/numbe
 Build and run services HLT, HLE
 ```bash
 $ cd example
-$ make
+# install HLE, HLT
+$ make install
+# build & run
+$ make 
 ```
 
 Run client#1
