@@ -93,25 +93,26 @@ def output_task():
         # GET ALL MESSAGES FROM CURRENT POINTER TO GOT POINTER
         while global_pointer != pointer:
             global_pointer = (global_pointer + 1) % messages_capacity
-
+            msg_id = (global_pointer - 1) % messages_capacity
             try:
                 resp_hlt = requests.get(
-                    HLT_URL+"/api/storage/hashes?id="+f"{(global_pointer - 1) % messages_capacity}"
+                    HLT_URL+f"/api/storage/hashes?id={msg_id}"
                 )
                 if resp_hlt.status_code != 200:
                     break 
             except:
-                print("@ failed do request HLT (/api/storage/hashes?id="+f"{(global_pointer - 1) % messages_capacity})")
+                print(f"@ failed do request HLT (/api/storage/hashes?id={msg_id})")
                 continue
 
+            msg_hash = resp_hlt.content.decode("utf8")
             try:
                 resp_hlt = requests.get(
-                    HLT_URL+"/api/network/message?hash="+f"{resp_hlt.content.decode("utf8")}"
+                    HLT_URL+f"/api/network/message?hash={msg_hash}"
                 )
                 if resp_hlt.status_code != 200:
                     break 
             except:
-                print("@ failed do request HLT (/api/network/message?hash="+f"{resp_hlt.content.decode("utf8")})")
+                print(f"@ failed do request HLT (/api/network/message?hash={msg_hash})")
                 continue
             
             # TRY DECRYPT GOT MESSAGE
