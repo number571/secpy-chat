@@ -63,6 +63,8 @@ def output_task():
     
     global_pointer = -1
     while True:
+        time.sleep(1)
+
         # GET INITIAL POINTER OF MESSAGES
         try:
             resp_hlt = requests.get(
@@ -70,7 +72,6 @@ def output_task():
             )
             if resp_hlt.status_code != 200:
                 print("@ got response error from HLT (/api/storage/pointer)")
-                time.sleep(1)
                 continue 
         except:
             print("@ failed do request HLT (/api/storage/pointer)")
@@ -80,14 +81,12 @@ def output_task():
             pointer = int(resp_hlt.content)
         except ValueError:
             print("@ got response invalid data from HLT (/api/storage/pointer)")
-            time.sleep(1)
             continue
 
         if global_pointer == -1:
             global_pointer = pointer
 
         if global_pointer == pointer:
-            time.sleep(1)
             continue
     
         # GET ALL MESSAGES FROM CURRENT POINTER TO GOT POINTER
@@ -99,6 +98,7 @@ def output_task():
                     HLT_URL+f"/api/storage/hashes?id={msg_id}"
                 )
                 if resp_hlt.status_code != 200:
+                    global_pointer = -1
                     break 
             except:
                 print(f"@ failed do request HLT (/api/storage/hashes?id={msg_id})")
