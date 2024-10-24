@@ -6,21 +6,36 @@ FRIENDS = {} # it is being overwritten
 
 def main():
     init_load_config("config.yml")
+    init_friends_list()
     parallel_run(input_task, output_task)
 
-def init_load_config(cfg_path):
-    global HLE_URL, HLT_URL, FRIENDS
+def init_friends_list():
+    global FRIENDS
+    
+    # GET FRIENDS FROM HLE
+    resp_hle = requests.get(
+        HLE_URL+"/api/config/friends"
+    )
+    if resp_hle.status_code != 200:
+        print("@ got response error from HLE (/api/config/friends)")
+        exit(1)
+    
+    friends_list = json.loads(resp_hle.content)
+    for v in friends_list:
+        FRIENDS[v['alias_name']] = {}
+    
+def init_load_config(app_cfg):
+    global HLE_URL, HLT_URL
 
-    with open(cfg_path, "r") as stream:
+    with open(app_cfg, "r") as stream:
         try:
-            config_loaded = yaml.safe_load(stream)
+            app_config_loaded = yaml.safe_load(stream)
         except yaml.YAMLError as e:
-            print("@ failed load config")
+            print("@ failed load app config")
             exit(3)
     
-    HLT_URL = "http://" + config_loaded["hlt_host"]
-    HLE_URL = "http://" + config_loaded["hle_host"]
-    FRIENDS = config_loaded["friends"]
+    HLT_URL = "http://" + app_config_loaded["hlt_host"]
+    HLE_URL = "http://" + app_config_loaded["hle_host"]
 
 def parallel_run(*fns):
     proc = []
@@ -49,13 +64,17 @@ def output_task():
     global_pointer = -1
     while True:
         # GET INITIAL POINTER OF MESSAGES
-        resp_hlt = requests.get(
-            HLT_URL+"/api/storage/pointer"
-        )
-        if resp_hlt.status_code != 200:
-            print("@ got response error from HLT (/api/storage/pointer)")
-            time.sleep(1)
-            continue 
+        try:
+            resp_hlt = requests.get(
+                HLT_URL+"/api/storage/pointer"
+            )
+            if resp_hlt.status_code != 200:
+                print("@ got response error from HLT (/api/storage/pointer)")
+                time.sleep(1)
+                continue 
+        except:
+            print("@ failed do request HLT (/api/storage/pointer)")
+            continue
 
         try:
             pointer = int(resp_hlt.content)
@@ -75,25 +94,37 @@ def output_task():
         while global_pointer != pointer:
             global_pointer = (global_pointer + 1) % messages_capacity
 
-            resp_hlt = requests.get(
-                HLT_URL+"/api/storage/hashes?id="+f"{(global_pointer - 1) % messages_capacity}"
-            )
-            if resp_hlt.status_code != 200:
-                break 
-            
-            resp_hlt = requests.get(
-                HLT_URL+"/api/network/message?hash="+resp_hlt.content.decode("utf8")
-            )
-            if resp_hlt.status_code != 200:
-                break 
+            try:
+                resp_hlt = requests.get(
+                    HLT_URL+"/api/storage/hashes?id="+f"{(global_pointer - 1) % messages_capacity}"
+                )
+                if resp_hlt.status_code != 200:
+                    break 
+            except:
+                print("@ failed do request HLT (/api/storage/hashes?id="+f"{(global_pointer - 1) % messages_capacity})")
+                continue
 
+            try:
+                resp_hlt = requests.get(
+                    HLT_URL+"/api/network/message?hash="+f"{resp_hlt.content.decode("utf8")}"
+                )
+                if resp_hlt.status_code != 200:
+                    break 
+            except:
+                print("@ failed do request HLT (/api/network/message?hash="+f"{resp_hlt.content.decode("utf8")})")
+                continue
+            
             # TRY DECRYPT GOT MESSAGE
-            resp_hle = requests.post(
-                HLE_URL+"/api/message/decrypt", 
-                data=resp_hlt.content
-            )
-            if resp_hle.status_code != 200:
-                continue 
+            try:
+                resp_hle = requests.post(
+                    HLE_URL+"/api/message/decrypt", 
+                    data=resp_hlt.content
+                )
+                if resp_hle.status_code != 200:
+                    continue 
+            except:
+                print("@ failed do request HLE (/api/message/decrypt)")
+                continue
 
             try:
                 json_resp = json.loads(resp_hle.content)
@@ -102,9 +133,8 @@ def output_task():
                 continue
         
             # CHECK GOT PUBLIC KEY IN FRIENDS LIST
-            user_id = hashlib.sha256(json_resp["public_key"].encode('utf-8')).hexdigest()
-            friend_name = get_friend_name(user_id)
-            if friend_name == "":
+            friend_name = json_resp["alias_name"]
+            if friend_name not in FRIENDS:
                 continue 
 
             got_data = bytes.fromhex(json_resp["hex_data"]).decode('utf-8')
@@ -122,39 +152,41 @@ def input_task():
 
         if msg.startswith("/friend "):
             try:
-                _friend = FRIENDS[msg[len("/friend "):].strip()]
+                _friend = msg[len("/friend "):].strip()
+                _ok = FRIENDS[_friend]
             except KeyError:
                 print("@ got invalid friend name")
                 continue
             friend = _friend
             continue
 
-        if len(friend) != 2 or friend[0] == "":
+        if friend == "":
             print("@ friend is null, use /friend to set")
             continue 
 
-        resp_hle = requests.post(
-            HLE_URL+"/api/message/encrypt", 
-            json={"public_key": friend[0], "hex_data": msg.encode("utf-8").hex()}
-        )
-        if resp_hle.status_code != 200:
-            print("@ got response error from HLE (/api/message/encrypt)")
-            continue 
-        
-        resp_hlt = requests.post(
-            HLT_URL+"/api/network/message", 
-            data=resp_hle.content
-        )
-        if resp_hlt.status_code != 200:
-            print("@ got response error from HLT (/api/network/message)")
-            continue 
-
-def get_friend_name(user_id):
-    for k, v in FRIENDS.items():
-        friend_id = hashlib.sha256(v[1].encode('utf-8')).hexdigest()
-        if user_id == friend_id:
-            return k
-    return ""
+        try:
+            resp_hle = requests.post(
+                HLE_URL+"/api/message/encrypt", 
+                json={"alias_name": friend, "hex_data": msg.encode("utf-8").hex()}
+            )
+            if resp_hle.status_code != 200:
+                print("@ got response error from HLE (/api/message/encrypt)")
+                continue 
+        except:
+            print("@ failed do request HLE (/api/message/encrypt)")
+            continue
+            
+        try:
+            resp_hlt = requests.post(
+                HLT_URL+"/api/network/message", 
+                data=resp_hle.content
+            )
+            if resp_hlt.status_code != 200:
+                print("@ got response error from HLT (/api/network/message)")
+                continue 
+        except:
+            print("@ failed do request HLT (/api/network/message)")
+            continue
 
 if __name__ == "__main__":
     main()

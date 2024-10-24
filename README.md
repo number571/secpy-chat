@@ -56,7 +56,7 @@ The application connects to two services at once: [HLE](https://github.com/numbe
 
 Build and run services HLT, HLE
 ```bash
-$ cd example/secpy_chat
+$ cd example
 $ make
 ```
 

@@ -10,6 +10,7 @@ install:
 	# MOD EXEC & RENAME
 	chmod +x hle_amd64_linux && mv hle_amd64_linux hle
 	chmod +x hlt_amd64_linux && mv hlt_amd64_linux hlt
+run: 
 	# COPY HLE
 	cp -r hle ./node1/prog_hle_1
 	cp -r hle ./node2/prog_hle_2
@@ -18,7 +19,6 @@ install:
 	# COPY CLIENT
 	cp -r ../main.py ./node1/main.py
 	cp -r ../main.py ./node2/main.py
-run: 
 	# MAKEFILE RUN
 	make run -C ./node1
 	make run -C ./node2
