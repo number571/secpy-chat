@@ -5,8 +5,8 @@ init:
 	pkill -15 --version
 install: 
 	# DOWNLOAD
-	wget https://github.com/number571/hidden-lake/releases/latest/download/hle_amd64_linux
-	wget https://github.com/number571/hidden-lake/releases/latest/download/hlt_amd64_linux
+	wget https://github.com/number571/hidden-lake/releases/download/v1.7.7/hle_amd64_linux
+	wget https://github.com/number571/hidden-lake/releases/download/v1.7.7/hlt_amd64_linux
 	# MOD EXEC & RENAME
 	chmod +x hle_amd64_linux && mv hle_amd64_linux hle
 	chmod +x hlt_amd64_linux && mv hlt_amd64_linux hlt

@@ -1,3 +1,2 @@
-# hlt_host: 185.43.4.253:9582 # prod
-hlt_host: localhost:6582 # local
+hlt_host: localhost:6582
 hle_host: localhost:8551
